@@ -8,6 +8,10 @@ class Cdvlib(object):
 		pass
 		self.url = 'http://192.168.0.101:8080/api/4' # For Intervideo Local Testing
 		self.iv_barcodes = []
+
+	def __str__(self):
+		pass
+
 	#Generic methods
 	def getUrl(self):
 
@@ -16,14 +20,15 @@ class Cdvlib(object):
 		return self.url
 
 	def getAuth(self):
-
+		"""Enables the user to access their CatDV database."""
+		print('\nEnter login details for CatDV: ')
 		usr = raw_input('Enter username: ')
 		pwd = raw_input('Enter password: ')
 		self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
 		return self.auth
 
 	def getSessionKey(self):
-
+		"""Extracts the session key from login to be used for future API calls."""
 		try:
 			response = requests.get(self.auth)
 			keydata = json.loads(response.text)
@@ -33,10 +38,9 @@ class Cdvlib(object):
 			raise ValueError('Unable to retrieve data.')
 
 	def getCatalogName(self):
-
+		"""Call to get information on all available catalogs."""
 		catalogs = requests.get(self.url + "/catalogs;jsessionid=" + str(self.key))
 		catalog_data = json.loads(catalogs.text)
-		#self.catalog_names = [(i['groupName'], i['ID']) for i in catalog_data['data'] if i['ID'] > 1]
 		self.catalog_names = []
 		for i in catalog_data['data']:
 			if i['ID'] > 1:
@@ -44,25 +48,20 @@ class Cdvlib(object):
 		return self.catalog_names
 
 	def getCatalogClips(self, catalog_id):
-		"""Requests all clips from the client catalog. Filtered by catalog ID."""
+		"""Requests all clips from a client catalog. Filtered by catalog ID."""
 		content_raw = requests.get(
 			self.url + '/clips;jsessionid=' + self.key + '?filter=and((catalog.id)eq({}))'
 			'&include=userFields'.format(catalog_id))
 		self.content_data = json.loads(content_raw.text)
 		return self.content_data
 
-
-		
-	def setCatalogID(self): # NOT IN USE
-		pass
-		#self.getCatalogClips(self.catalog_names[0][1]) # Classic Media
-
 	def deleteSession(self):
+		"""HTTP delete call to the API"""
 		return requests.delete(self.url + '/session')
 
 	#Intervideo Specific
 	def getIVNumbers(self, data): # Generator.
-		
+		"""Generator to identify Intervideo barcode numbers"""
 		count = 0
 		try:
 			for i in data['data']['items']:
@@ -74,7 +73,7 @@ class Cdvlib(object):
 			print('Possible Error at position {}'.format(count))
 
 	def collectIVNumbers(self):
-
+		"""Collects Intervideo barcodes into a list."""
 		try:
 			iv_gen = self.getIVNumbers(self.content_data)
 			count = 0
@@ -85,21 +84,8 @@ class Cdvlib(object):
 			print('Collected {} barcode numbers'.format(count))
 
 	def sortBarcodes(self):
+		"""Sorts Intervideo barcode numbers and removes duplicates."""
 		return sorted(set(self.iv_barcodes))
 
-try:
-	a = Cdvlib()
-	#a.getUrl()
-	a.getAuth()
-	a.getSessionKey()
-
-	a.getCatalogName()
-	a.getCatalogClips(a.catalog_names[0][1]) 
-	a.collectIVNumbers()
-	a.sortBarcodes()
-except ValueError:
-	print('There was a server error. Please try again in a few moments.')
-finally:
-	a.deleteSession()
 
 
