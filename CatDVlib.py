@@ -35,7 +35,7 @@ class Cdvlib(object):
 			self.key = keydata['data']['jsessionid']
 			return self.key
 		except:
-			raise ValueError('Unable to retrieve data.')
+			raise ValueError('Incorrect login details')
 
 	def getCatalogName(self):
 		"""Call to get information on all available catalogs."""
