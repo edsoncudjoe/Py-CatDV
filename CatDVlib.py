@@ -4,23 +4,23 @@ import json
 class Cdvlib(object):
 
 	def __init__(self):
+		"""A wrapper for the CatDV Server API"""
 
-		pass
 		self.url = 'http://192.168.0.101:8080/api/4' # For Intervideo Local Testing
 		self.iv_barcodes = []
 
-	def __str__(self):
-		pass
-
 	#Generic methods
-	def getUrl(self):
-
-		url_input = raw_input('Enter URL of the CatDV Sever (eg. \'localhost:8080\'): ')
-		self.url = url_input + '/api/4'
+	def setUrl(self):
+		"""
+		Stores the location of the CatDV server. 
+		The user only needs to enter the server domain eg: 'google.com'
+		"""
+		url_input = raw_input('Enter address of the CatDV Sever (eg. \'localhost:8080\'): ')
+		self.url = 'http://' + url_input + '/api/4'
 		return self.url
 
 	def getAuth(self):
-		"""Enables the user to access their CatDV database."""
+		"""Enables the user to login to their CatDV database."""
 		print('\nEnter login details for CatDV: ')
 		usr = raw_input('Enter username: ')
 		pwd = raw_input('Enter password: ')
@@ -34,8 +34,12 @@ class Cdvlib(object):
 			keydata = json.loads(response.text)
 			self.key = keydata['data']['jsessionid']
 			return self.key
-		except:
-			raise ValueError('Incorrect login details')
+		except requests.exceptions.ConnectionError as e:
+			print('\nCan\'t access the API.'
+				' Please check you have the right domain address')
+		except TypeError:
+			print('\nYou provided incorrect login details.'
+				' Please check and try again.')
 
 	def getCatalogName(self):
 		"""Call to get information on all available catalogs."""
