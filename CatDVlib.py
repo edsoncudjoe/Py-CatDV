@@ -1,5 +1,6 @@
 import requests
 import json
+import getpass
 
 class Cdvlib(object):
 
@@ -23,7 +24,7 @@ class Cdvlib(object):
 		"""Enables the user to login to their CatDV database."""
 		print('\nEnter login details for CatDV: ')
 		usr = raw_input('Enter username: ')
-		pwd = raw_input('Enter password: ')
+		pwd = getpass.getpass('Enter password: ')
 		self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
 		return self.auth
 
@@ -59,6 +60,19 @@ class Cdvlib(object):
 		self.content_data = json.loads(content_raw.text)
 		return self.content_data
 
+	def clipSearch(self):
+		"""Returns all clips that match the given search term"""
+		entry = raw_input('Enter title: ')
+		result = requests.get(
+			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
+				'has({}))&include=userFields'.format(entry))
+		jdata = json.loads(result.text)
+		for i in jdata['data']['items']:
+			if i['userFields']['U7']:        
+				print i['userFields']['U7'], i['name']
+			else:
+				print i['name']
+
 	def deleteSession(self):
 		"""HTTP delete call to the API"""
 		return requests.delete(self.url + '/session')
@@ -70,7 +84,7 @@ class Cdvlib(object):
 		try:
 			for i in data['data']['items']:
 				if 'userFields' in i.keys():
-					if 'U7' in i['userFields']:
+					if 'U7' in i['userFields']: #if i['userFields']['U7']??
 						count += 1
 						yield i['userFields']['U7']
 		except:
