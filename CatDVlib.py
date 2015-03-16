@@ -30,11 +30,14 @@ class Cdvlib(object):
 
 	def getSessionKey(self):
 		"""Extracts the session key from login to be used for future API calls."""
+		connect_timeout = 0.1
 		try:
-			response = requests.get(self.auth)
+			response = requests.get(self.auth, timeout=(connect_timeout, 60.0))
 			keydata = json.loads(response.text)
 			self.key = keydata['data']['jsessionid']
 			return self.key
+		except requests.exceptions.ConnectTimeout as e:
+			print "The server connection timed-out."
 		except requests.exceptions.ConnectionError as e:
 			print('\nCan\'t access the API.'
 				' Please check you have the right domain address')
