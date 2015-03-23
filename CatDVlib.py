@@ -20,6 +20,11 @@ class Cdvlib(object):
 		self.url = 'http://' + url_input + '/api/4'
 		return self.url
 
+	def setAuth(self, username, password):
+		"""Api request with given login info"""
+		self.auth = self.url + "/session?usr=" + "&pwd=" + pwd
+		return self.auth
+	
 	def getAuth(self):
 		"""Enables the user to login to their CatDV database."""
 		print('\nEnter login details for CatDV: ')
