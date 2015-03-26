@@ -22,7 +22,7 @@ class Cdvlib(object):
 
 	def setAuth(self, username, password):
 		"""Api request with given login info"""
-		self.auth = self.url + "/session?usr=" + "&pwd=" + pwd
+		self.auth = self.url + "/session?usr=" + username + "&pwd=" + password
 		return self.auth
 	
 	def getAuth(self):
@@ -30,8 +30,10 @@ class Cdvlib(object):
 		print('\nEnter login details for CatDV: ')
 		usr = raw_input('Enter username: ')
 		pwd = getpass.getpass('Enter password: ')
-		self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
-		return self.auth
+		self.setAuth(usr, pwd)
+		return
+		#self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
+		#return self.auth
 
 	def getSessionKey(self):
 		"""Extracts the session key from login to be used for future API calls."""
@@ -41,6 +43,8 @@ class Cdvlib(object):
 			keydata = json.loads(response.text)
 			self.key = keydata['data']['jsessionid']
 			return self.key
+		except ValueError, e:
+			print('ERROR: ', e)
 		except requests.exceptions.ConnectTimeout as e:
 			print "The server connection timed-out."
 		except requests.exceptions.ConnectionError as e:
