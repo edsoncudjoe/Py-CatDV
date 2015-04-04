@@ -40,14 +40,14 @@ class Cdvlib(object):
 		connect_timeout = 0.1
 		try:
 			response = requests.get(self.auth, timeout=(connect_timeout, 60.0))
+			self.status = response.status_code
 			keydata = json.loads(response.text)
 			self.key = keydata['data']['jsessionid']
 			return self.key
-		except ValueError, e:
-			print('ERROR: ', e)
 		except requests.exceptions.ConnectTimeout as e:
 			print "The server connection timed-out."
 		except requests.exceptions.ConnectionError as e:
+			raise e
 			print('\nCan\'t access the API.'
 				' Please check you have the right domain address')
 		except TypeError:
