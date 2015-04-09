@@ -2,7 +2,7 @@ import requests
 import json
 import getpass
 
-class Cdvlib(object):
+class Catdvlib(object):
 
 	def __init__(self):
 		"""A wrapper for the CatDV Server API"""
@@ -11,7 +11,7 @@ class Cdvlib(object):
 		self.iv_barcodes = []
 
 	#Generic methods
-	def setUrl(self):
+	def set_url(self):
 		"""
 		Stores the location of the CatDV server. 
 		The user only needs to enter the server domain eg: 'google.com'
@@ -20,22 +20,22 @@ class Cdvlib(object):
 		self.url = 'http://' + url_input + '/api/4'
 		return self.url
 
-	def setAuth(self, username, password):
+	def set_auth(self, username, password):
 		"""Api request with given login info"""
 		self.auth = self.url + "/session?usr=" + username + "&pwd=" + password
 		return self.auth
 	
-	def getAuth(self):
+	def get_auth(self):
 		"""Enables the user to login to their CatDV database."""
 		print('\nEnter login details for CatDV: ')
 		usr = raw_input('Enter username: ')
 		pwd = getpass.getpass('Enter password: ')
-		self.setAuth(usr, pwd)
+		self.set_auth(usr, pwd)
 		return
 		#self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
 		#return self.auth
 
-	def getSessionKey(self):
+ 	def get_session_key(self):
 		"""Extracts the session key from login to be used for future API calls."""
 		connect_timeout = 0.1
 		try:
@@ -54,7 +54,7 @@ class Cdvlib(object):
 			print('\nYou provided incorrect login details.'
 				' Please check and try again.')
 
-	def getCatalogName(self):
+	def get_catalog_name(self):
 		"""Call to get information on all available catalogs."""
 		catalogs = requests.get(self.url + "/catalogs;jsessionid=" + str(self.key))
 		catalog_data = json.loads(catalogs.text)
@@ -64,7 +64,7 @@ class Cdvlib(object):
 				self.catalog_names.append((i['groupName'], i['ID']))
 		return self.catalog_names
 
-	def getCatalogClips(self, catalog_id):
+	def get_catalog_clips(self, catalog_id):
 		"""Requests all clips from a client catalog. Filtered by catalog ID."""
 		content_raw = requests.get(
 			self.url + '/clips;jsessionid=' + self.key + '?filter=and((catalog.id)eq({}))'
@@ -72,7 +72,7 @@ class Cdvlib(object):
 		self.content_data = json.loads(content_raw.text)
 		return self.content_data
 
-	def clipSearch(self):
+	def clip_search(self):
 		"""Returns all clips that match the given search term"""
 		entry = raw_input('Enter title: ')
 		result = requests.get(
@@ -85,12 +85,12 @@ class Cdvlib(object):
 			else:
 				print i['name']
 
-	def deleteSession(self):
+	def delete_session(self):
 		"""HTTP delete call to the API"""
 		return requests.delete(self.url + '/session')
 
 	#Intervideo Specific
-	def getIVNumbers(self, data): # Generator.
+	def get_iv_numbers(self, data): # Generator.
 		"""Generator to identify Intervideo barcode numbers"""
 		count = 0
 		try:
@@ -102,10 +102,10 @@ class Cdvlib(object):
 		except:
 			print('Possible Error at position {}'.format(count))
 
-	def collectIVNumbers(self):
+	def collect_iv_numbers(self):
 		"""Collects Intervideo barcodes into a list."""
 		try:
-			iv_gen = self.getIVNumbers(self.content_data)
+			iv_gen = self.get_iv_umbers(self.content_data)
 			count = 0
 			for i in range(len(self.content_data['data']['items'])):
 				self.iv_barcodes.append(next(iv_gen))
@@ -113,7 +113,7 @@ class Cdvlib(object):
 		except StopIteration:
 			print('Collected {} barcode numbers'.format(count))
 
-	def sortBarcodes(self):
+	def sort_barcodes(self):
 		"""Sorts Intervideo barcode numbers and removes duplicates."""
 		return sorted(set(self.iv_barcodes))
 
