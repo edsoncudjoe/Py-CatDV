@@ -45,14 +45,17 @@ class Catdvlib(object):
 			self.key = keydata['data']['jsessionid']
 			return self.key
 		except requests.exceptions.ConnectTimeout as e:
+			raise e
 			print "The server connection timed-out."
 		except requests.exceptions.ConnectionError as e:
 			raise e
 			print('\nCan\'t access the API.'
 				' Please check you have the right domain address')
-		except TypeError:
-			print('\nYou provided incorrect login details.'
-				' Please check and try again.')
+		except Exception, e:
+			raise e
+			print(e)
+			#print('\nYou provided incorrect login details.'
+			#	' Please check and try again.')
 
 	def get_catalog_name(self):
 		"""Call to get information on all available catalogs."""
@@ -74,7 +77,7 @@ class Catdvlib(object):
 
 	def clip_search(self):
 		"""Returns all clips that match the given search term"""
-		entry = raw_input('Enter title: ')
+		entry = raw_input('Enter clip title: ')
 		result = requests.get(
 			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
 				'has({}))&include=userFields'.format(entry))
@@ -117,5 +120,14 @@ class Catdvlib(object):
 		"""Sorts Intervideo barcode numbers and removes duplicates."""
 		return sorted(set(self.iv_barcodes))
 
+if __name__ == '__main__':
+	user = Catdvlib()
 
+	user.get_auth()
+	user.get_session_key()
+	user.clip_search()
+
+	logout = raw_input('\nlogout? [Y/n]: ').lower()
+	if logout == 'y':
+		user.delete_session()
 
