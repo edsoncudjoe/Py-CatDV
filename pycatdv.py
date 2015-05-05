@@ -3,10 +3,12 @@ import json
 import getpass
 
 class Catdvlib(object):
+	"""
+	A python wrapper for the CatDV Server REST API
+
+	"""
 
 	def __init__(self):
-		"""A wrapper for the CatDV Server API"""
-
 		self.url = 'http://192.168.0.101:8080/api/4' # For Intervideo Local Testing
 		self.iv_barcodes = []
 
@@ -84,9 +86,23 @@ class Catdvlib(object):
 		jdata = json.loads(result.text)
 		for i in jdata['data']['items']:
 			if i['userFields']['U7']:        
-				print i['userFields']['U7'], i['name']
+				print i['userFields']['U7'], i['name'], i['ID']
 			else:
-				print i['name']
+				print i['name'], i['ID']
+
+	def find_by_id(self):
+		"""Retrieves all data for a clip specified by the unique ID.
+		Returns JSON data. User can then specify further by calling any of 
+		the associated keys"""
+		clip_id = raw_input('Enter Clip ID: ')
+		clip = requests.get(
+			self.url + '/clips/' + clip_id + ';jsessionid=' + self.key)
+		clip_info = json.loads(clip.text)
+		return clip_info['data']
+
+	def delete_clip(self):
+		"""Delete a clip by calling its unique ID """
+		pass
 
 	def delete_session(self):
 		"""HTTP delete call to the API"""
@@ -122,12 +138,15 @@ class Catdvlib(object):
 
 if __name__ == '__main__':
 	user = Catdvlib()
+	try:
+		user.get_auth()
+		user.get_session_key()
+		#user.clip_search()
+		c = user.find_by_id()
+		#c['clipref']
 
-	user.get_auth()
-	user.get_session_key()
-	user.clip_search()
-
-	logout = raw_input('\nlogout? [Y/n]: ').lower()
-	if logout == 'y':
+	except Exception, e:
+		print(e)
+	finally:
 		user.delete_session()
 
