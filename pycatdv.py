@@ -35,7 +35,16 @@ class Catdvlib(object):
 		self.set_auth(usr, pwd)
 		return
 		#self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
-		#return self.auth
+		#return self.
+	
+	def get_rsa(self):
+		full_key = self.url + '/session/key'
+		try:
+			full_rsa = requests.get(full_key)
+			rsa_data = json.loads(full_rsa.text)
+		except:
+			raise Exception
+		return rsa_data
 
  	def get_session_key(self):
 		"""Extracts the session key from login to be used for future API calls."""
@@ -77,7 +86,7 @@ class Catdvlib(object):
 		self.content_data = json.loads(content_raw.text)
 		return self.content_data
 
-	def clip_search(self):
+	def iv_clip_search(self): # For Intervideo
 		"""Returns all clips that match the given search term"""
 		entry = raw_input('Enter clip title: ')
 		result = requests.get(
@@ -90,19 +99,26 @@ class Catdvlib(object):
 			else:
 				print i['name'], i['ID']
 
-	def find_by_id(self):
-		"""Retrieves all data for a clip specified by the unique ID.
-		Returns JSON data. User can then specify further by calling any of 
-		the associated keys"""
-		clip_id = raw_input('Enter Clip ID: ')
-		clip = requests.get(
-			self.url + '/clips/' + clip_id + ';jsessionid=' + self.key)
-		clip_info = json.loads(clip.text)
-		return clip_info['data']
+	def iv_clip_search(self):
+		"""Returns all clips that match the given search term"""
+		entry = raw_input('Enter clip title: ')
+		result = requests.get(
+			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
+				'has({}))&include=userFields'.format(entry))
+		jdata = json.loads(result.text)
+		return jdata['data']['items']
 
-	def delete_clip(self):
-		"""Delete a clip by calling its unique ID """
-		pass
+	def clip_id_search(self):
+		"""Retrieves all data for a clip specified by the unique ID.
+		Returns JSON data. User can then specify further by calling any
+		of the associated keys"""
+		clip_id = raw_input('Enter Clip ID \'eg: 480CADB5\': ')
+		clip = requests.get(
+			self.url + '/clips;jsessionid=' + self.key + \
+			'?filter=and((clip.clipref)has({}))'.format(clip_id))
+		clip_info = json.loads(clip.text)
+		return clip_info['data']['items']
+
 
 	def delete_session(self):
 		"""HTTP delete call to the API"""
@@ -141,9 +157,10 @@ if __name__ == '__main__':
 	try:
 		user.get_auth()
 		user.get_session_key()
-		#user.clip_search()
-		c = user.find_by_id()
-		#c['clipref']
+		#user.iv_clip_search()
+		c = user.clip_id_search()
+		print c
+		long_key = user.get_rsa()
 
 	except Exception, e:
 		print(e)
