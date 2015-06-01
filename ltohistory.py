@@ -144,7 +144,7 @@ def get_storage_size(client_items):
 		count += i[1]
 	return count
 
-def catdv_login():
+def catdv_login(user):
 	"""Enter CatDV server login details to get access to the API"""
 	try:
 		user.getAuth()
@@ -153,14 +153,17 @@ def catdv_login():
 		user.getCatalogName()
 		time.sleep(1)
 		print('Catalog names and ID\'s have been loaded')
-	except:
-		raise AttributeError
+	except AttributeError, e:
+		raise e
 
-def show_catalog_names():
-	print('\nCurrent catalogs available: ')
-	for name in user.catalog_names:
-		print name[0]
-		
+def show_catalog_names(user):
+	try:
+		print('\nCurrent catalogs available: ')
+		for name in user.catalog_names:
+			print name[0]
+	except Exception, e:
+		print(e)
+
 def get_barcodes(group_id):
 	"""Gets a list of IV barcodes for user-specified client."""
 	user.iv_barcodes = []
@@ -168,6 +171,18 @@ def get_barcodes(group_id):
 	user.collectIVNumbers()
 	return user.sortBarcodes()
 
+def client_name_id(user):
+	clients = {}
+	for name in user.catalog_names:
+		clients[name[0]] = name[1]
+	return clients
+
+def total_sizes(client_dict):
+	for item in client_dict.items():
+		api = get_barcodes(item[1])
+		two = set(get_client_items(name_size, api))
+		terabytes = get_storage_size(two)
+		print('\n{0}TB written for {1}\n'.format(terabytes, item[0]))
 
 LTOFILETYPES = options = {}
 options['filetypes'] = [
@@ -176,117 +191,128 @@ dload = '/Users/Edit4/Downloads/'
 root = Tk()
 root.withdraw()
 
-#def Main():
-try:
-	# Get latest LTO data file from Space LTO. Catches different file types.
-	get_lto = True
-	while get_lto:
-		try:
-			fname = tkFileDialog.askopenfilename(**LTOFILETYPES)		
-			if fname:
-				print('File loaded.\n')
-			if '.json' in fname: 
-				jdata = get_json(fname)
-				current = json_to_list(jdata)
-				name_size = json_final(current)
-				get_lto = False
-			elif '.csv' in fname:
-				lto_file = open(fname)
-				data = csv.reader(lto_file)
-				name_size = lto_to_list(data)
-				get_lto = False
-			else:
-				print('\nNo file submitted.')
-				get_lto = False
-				#print('\nCould not recognise the type of file submitted.'
-				#	'\nPlease use a \'.csv\' or \'.json\' file.\n')
-		except:
-			raise IndexError 
-
+def main():
 	# Collect barcodes direct from CatDV API.
+	print('creating object')
 	user = Cdvlib()
-	
-	# Login to CatDV API
-	start = True
-	while start:
-		auth = raw_input('Login to CatDV Api? [y/n]: ').lower()
-		if auth == 'y':
-			catdv_login()
-			show_catalog_names()
+	print('\ncreated')
 
-			# Lists created from data obtained by the CatDV API.
-			cl_api = get_barcodes(user.catalog_names[0][1])
-			con_api = get_barcodes(user.catalog_names[1][1])
-			ng_api = get_barcodes(user.catalog_names[2][1])
-			pw_api = get_barcodes(user.catalog_names[3][1])
-
-			user.deleteSession()
-
-			ng_2 = set(get_client_items(name_size, ng_api))
-			pw_2 = set(get_client_items(name_size, pw_api))
-			cl_2 = set(get_client_items(name_size, cl_api))
-
-			ng_tb_2 = get_storage_size(ng_2)
-			pw_tb_2 = get_storage_size(pw_2)
-			cl_tb_2 = get_storage_size(cl_2)
-			print('\nResults:\n{}TB written for NGTV\n{}TB written for' 
-				' Power\n{}TB written for'
-				' Classic Media/Dreamworks\n'.format(ng_tb_2, pw_tb_2, cl_tb_2))
-			
-			start = False
-		
-		elif auth == 'n':	
-			print('You chose not to access the CatDV API.')
-			# Physical lists of current IV barcodes for each client.
-			# Manually collected from CatDV	
-			try:
-				ng_list = set(get_CatDV_data(dload + 'ngtv2015_2.txt'))
-				power_list = set(get_CatDV_data(dload + 'power2015_2.txt'))
-				classic_list = set(get_CatDV_data(dload + 'classic2015_2.txt'))
-				content_list = set(get_CatDV_data(dload + 'content2015_2.txt'))
-			except Exception, e:
-				print e
-
-			# Separate LTO Barcodes by client
-			ng = get_client_items(name_size, ng_list)
-			pw = get_client_items(name_size, power_list)
-			cl = get_client_items(name_size, classic_list)
-			cn = get_client_items(name_size, content_list)
-
-			# Storage size in TB for client
-			ng_tb = get_storage_size(ng)
-			pw_tb = get_storage_size(pw)
-			cl_tb = get_storage_size(cl)
-			cn_tb = get_storage_size(cn)
-			
-			print('{}TB written for NGTV\n{}TB written for' 
-				' Power\n{}TB written for'
-				' Classic Media/Dreamworks\n'.format(ng_tb, pw_tb, cl_tb))
-
-			start = False
-		else:
-			print('Not a recognised input. Please try again.')
-
-
-	create_csv = raw_input(
-		'Do you wish to write the months archived tape barcodes' 
-		'+ sizes to a csv file? [y/n]: ')
-	if create_csv == 'y':
-		make_csv_file(name_size)
-	else:
-		print('You have chosen not to write to a csv file.')
-except NameError, e: # Name_size var has not been created. check CatDV 
-	print(e, 'Check CatDV data inputs: API login and/or filenames.')
-except IOError, e:
-	print(e, 'The CatDV file used for getting IV numbers was not found')
-except AttributeError:
-	print('\nUnable to access the CatDV API. Please try again later.')
-finally:
 	try:
-		if lto_file:
-			lto_file.close()
-	except NameError:
-		print('Closing application')
-	print('Goodbye!')
-#if __name__ == '__main__':
-#	Main()
+		# Get latest LTO data file from Space LTO. Catches different file types.
+		get_lto = True
+		while get_lto:
+			try:
+				fname = tkFileDialog.askopenfilename(**LTOFILETYPES)		
+				if fname:
+					print('File loaded.\n')
+				if '.json' in fname: 
+					jdata = get_json(fname)
+					current = json_to_list(jdata)
+					name_size = json_final(current)
+					get_lto = False
+				elif '.csv' in fname:
+					lto_file = open(fname)
+					data = csv.reader(lto_file)
+					name_size = lto_to_list(data)
+					get_lto = False
+				else:
+					print('\nNo file submitted.')
+					get_lto = False
+					#print('\nCould not recognise the type of file submitted.'
+					#	'\nPlease use a \'.csv\' or \'.json\' file.\n')
+			except:
+				raise IndexError 
+
+		
+		
+		# Login to CatDV API
+		start = True
+		while start:
+			auth = raw_input('Login to CatDV Api? [y/n]: ').lower()
+			if auth == 'y':
+				catdv_login(user)
+				show_catalog_names(user)
+
+###Error
+				names_and_groupid = client_name_id(user)
+				total_sizes(names_and_groupid)
+
+
+
+
+				# Lists created from data obtained by the CatDV API.
+				#cl_api = get_barcodes(user.catalog_names[0][1])
+				#con_api = get_barcodes(user.catalog_names[1][1])
+				#ng_api = get_barcodes(user.catalog_names[2][1])
+				#pw_api = get_barcodes(user.catalog_names[3][1])
+
+				user.deleteSession()
+
+				#ng_2 = set(get_client_items(name_size, ng_api))
+				#pw_2 = set(get_client_items(name_size, pw_api))
+				#cl_2 = set(get_client_items(name_size, cl_api))
+
+				#ng_tb_2 = get_storage_size(ng_2)
+				#pw_tb_2 = get_storage_size(pw_2)
+				#cl_tb_2 = get_storage_size(cl_2)
+				#print('\nResults:\n{}TB written for NGTV\n{}TB written for' 
+				#	' Power\n{}TB written for'
+				#	' Classic Media/Dreamworks\n'.format(ng_tb_2, pw_tb_2, cl_tb_2))
+				
+				start = False
+			
+			elif auth == 'n':	
+				print('You chose not to access the CatDV API.')
+				# Physical lists of current IV barcodes for each client.
+				# Manually collected from CatDV	
+				try:
+					ng_list = set(get_CatDV_data(dload + 'ngtv2015_2.txt'))
+					power_list = set(get_CatDV_data(dload + 'power2015_2.txt'))
+					classic_list = set(get_CatDV_data(dload + 'classic2015_2.txt'))
+					content_list = set(get_CatDV_data(dload + 'content2015_2.txt'))
+				except Exception, e:
+					print e
+
+				# Separate LTO Barcodes by client
+				ng = get_client_items(name_size, ng_list)
+				pw = get_client_items(name_size, power_list)
+				cl = get_client_items(name_size, classic_list)
+				cn = get_client_items(name_size, content_list)
+
+				# Storage size in TB for client
+				ng_tb = get_storage_size(ng)
+				pw_tb = get_storage_size(pw)
+				cl_tb = get_storage_size(cl)
+				cn_tb = get_storage_size(cn)
+				
+				print('{}TB written for NGTV\n{}TB written for' 
+					' Power\n{}TB written for'
+					' Classic Media/Dreamworks\n'.format(ng_tb, pw_tb, cl_tb))
+
+				start = False
+			else:
+				print('Not a recognised input. Please try again.')
+
+
+		create_csv = raw_input(
+			'Do you wish to write the months archived tape barcodes' 
+			'+ sizes to a csv file? [y/n]: ')
+		if create_csv == 'y':
+			make_csv_file(name_size)
+		else:
+			print('You have chosen not to write to a csv file.')
+	except NameError, e: # Name_size var has not been created. check CatDV 
+		print(e, 'Check CatDV data inputs: API login and/or filenames.')
+	except IOError, e:
+		print(e, 'The CatDV file used for getting IV numbers was not found')
+	except AttributeError:
+		print('\nUnable to access the CatDV API. Please try again later.')
+	finally:
+		try:
+			if lto_file:
+				lto_file.close()
+		except NameError:
+			print('Closing application')
+		print('Goodbye!')
+if __name__ == '__main__':
+	main()
