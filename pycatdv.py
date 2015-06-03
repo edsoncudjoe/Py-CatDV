@@ -4,12 +4,12 @@ import getpass
 
 class Catdvlib(object):
 	"""
-	A python wrapper for the CatDV Server REST API
+	A python wrapper for the CatDV Server REST API service
 
 	"""
 
 	def __init__(self):
-		self.url = 'http://192.168.0.101:8080/api/4' # For Intervideo Local Testing
+		self.url = 'http://192.168.0.101:8080/api/4' # For Local Testing
 		self.iv_barcodes = []
 
 	#Generic methods
@@ -18,7 +18,8 @@ class Catdvlib(object):
 		Stores the location of the CatDV server. 
 		The user only needs to enter the server domain eg: 'google.com'
 		"""
-		url_input = raw_input('Enter address of the CatDV Sever (eg. \'localhost:8080\'): ')
+		url_input = raw_input(
+			'Enter address of the CatDV Sever (eg. \'localhost:8080\'): ')
 		self.url = 'http://' + url_input + '/api/4'
 		return self.url
 
@@ -47,10 +48,13 @@ class Catdvlib(object):
 		return rsa_data
 
  	def get_session_key(self):
-		"""Extracts the session key from login to be used for future API calls."""
+		"""
+		Extracts the session key from login to be used for future API calls.
+		"""
 		connect_timeout = 0.1
 		try:
-			response = requests.get(self.auth, timeout=(connect_timeout, 60.0))
+			response = requests.get(self.auth, 
+				timeout=(connect_timeout, 60.0))
 			self.status = response.status_code
 			keydata = json.loads(response.text)
 			self.key = keydata['data']['jsessionid']
@@ -63,14 +67,12 @@ class Catdvlib(object):
 			print('\nCan\'t access the API.'
 				' Please check you have the right domain address')
 		except Exception, e:
-			raise e
 			print(e)
-			#print('\nYou provided incorrect login details.'
-			#	' Please check and try again.')
 
 	def get_catalog_name(self):
 		"""Call to get information on all available catalogs."""
-		catalogs = requests.get(self.url + "/catalogs;jsessionid=" + str(self.key))
+		catalogs = requests.get(self.url + "/catalogs;jsessionid="
+			+ str(self.key))
 		catalog_data = json.loads(catalogs.text)
 		self.catalog_names = []
 		for i in catalog_data['data']:
@@ -79,18 +81,49 @@ class Catdvlib(object):
 		return self.catalog_names
 
 	def get_catalog_clips(self, catalog_id):
-		"""Requests all clips from a client catalog. Filtered by catalog ID."""
+		"""
+		Requests all clips from a client catalog. Filtered by catalog ID.
+		"""
 		content_raw = requests.get(
-			self.url + '/clips;jsessionid=' + self.key + '?filter=and((catalog.id)eq({}))'
-			'&include=userFields'.format(catalog_id))
+			self.url + '/clips;jsessionid=' + self.key + \
+			'?filter=and((catalog.id)eq({}))&include=userFields'\
+			.format(catalog_id))
 		self.content_data = json.loads(content_raw.text)
 		return self.content_data
 
+	def clip_search(self):
+		"""Returns all clips that match the given search term"""
+		entry = raw_input('Enter clip title: ')
+		result = requests.get(
+			self.url + '/clips;jsessionid=' + self.key + \
+			'?filter=and((clip.name)has({}))&include=userFields'\
+			.format(entry))
+		jdata = json.loads(result.text)
+		return jdata['data']['items']
+
+	def clip_id_search(self):
+		"""
+		Retrieves all data for a clip specified by the unique ID.
+		Returns JSON data.
+		"""
+		clip_id = raw_input('Enter Clip ID \'eg: 480CADB5\': ')
+		clip = requests.get(
+			self.url + '/clips;jsessionid=' + self.key + \
+			'?filter=and((clip.clipref)has({}))'.format(clip_id))
+		clip_info = json.loads(clip.text)
+		return clip_info['data']['items']
+
+	def delete_session(self):
+		"""HTTP delete call to the API"""
+		return requests.delete(self.url + '/session')
+
+	#Intervideo Specific
 	def iv_clip_search(self): # For Intervideo
 		"""Returns all clips that match the given search term"""
 		entry = raw_input('Enter clip title: ')
 		result = requests.get(
-			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
+			self.url + '/clips;jsessionid=' + self.key
+			+ '?filter=and((clip.name)'
 				'has({}))&include=userFields'.format(entry))
 		jdata = json.loads(result.text)
 		for i in jdata['data']['items']:
@@ -99,32 +132,6 @@ class Catdvlib(object):
 			else:
 				print i['name'], i['ID']
 
-	def iv_clip_search(self):
-		"""Returns all clips that match the given search term"""
-		entry = raw_input('Enter clip title: ')
-		result = requests.get(
-			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
-				'has({}))&include=userFields'.format(entry))
-		jdata = json.loads(result.text)
-		return jdata['data']['items']
-
-	def clip_id_search(self):
-		"""Retrieves all data for a clip specified by the unique ID.
-		Returns JSON data. User can then specify further by calling any
-		of the associated keys"""
-		clip_id = raw_input('Enter Clip ID \'eg: 480CADB5\': ')
-		clip = requests.get(
-			self.url + '/clips;jsessionid=' + self.key + \
-			'?filter=and((clip.clipref)has({}))'.format(clip_id))
-		clip_info = json.loads(clip.text)
-		return clip_info['data']['items']
-
-
-	def delete_session(self):
-		"""HTTP delete call to the API"""
-		return requests.delete(self.url + '/session')
-
-	#Intervideo Specific
 	def get_iv_numbers(self, data): # Generator.
 		"""Generator to identify Intervideo barcode numbers"""
 		count = 0
@@ -157,11 +164,7 @@ if __name__ == '__main__':
 	try:
 		user.get_auth()
 		user.get_session_key()
-		#user.iv_clip_search()
-		c = user.clip_id_search()
-		print c
 		long_key = user.get_rsa()
-
 	except Exception, e:
 		print(e)
 	finally:
