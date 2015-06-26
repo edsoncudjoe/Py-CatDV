@@ -118,7 +118,7 @@ class Catdvlib(object):
 		return requests.delete(self.url + '/session')
 
 	#Intervideo Specific
-	def iv_clip_search(self): # For Intervideo
+	def iv_clip_search(self): 
 		"""Returns all clips that match the given search term"""
 		entry = raw_input('Enter clip title: ')
 		result = requests.get(
@@ -132,13 +132,13 @@ class Catdvlib(object):
 			else:
 				print i['name'], i['ID']
 
-	def get_iv_numbers(self, data): # Generator.
+	def get_iv_numbers(self, data):
 		"""Generator to identify Intervideo barcode numbers"""
 		count = 0
 		try:
 			for i in data['data']['items']:
 				if 'userFields' in i.keys():
-					if 'U7' in i['userFields']: #if i['userFields']['U7']??
+					if 'U7' in i['userFields']:
 						count += 1
 						yield i['userFields']['U7']
 		except:
