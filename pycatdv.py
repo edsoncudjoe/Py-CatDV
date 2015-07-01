@@ -1,6 +1,7 @@
 import requests
 import json
 import getpass
+from settings import url
 
 class Catdvlib(object):
 	"""
@@ -9,7 +10,8 @@ class Catdvlib(object):
 	"""
 
 	def __init__(self):
-		self.url = 'http://192.168.0.101:8080/api/4' # For Local Testing
+		#self.url = 'http://192.168.0.101:8080/api/4' # For Local Testing
+		self.url = url
 		self.iv_barcodes = []
 
 	#Generic methods
@@ -147,7 +149,7 @@ class Catdvlib(object):
 	def collect_iv_numbers(self):
 		"""Collects Intervideo barcodes into a list."""
 		try:
-			iv_gen = self.get_iv_umbers(self.content_data)
+			iv_gen = self.get_iv_numbers(self.content_data)
 			count = 0
 			for i in range(len(self.content_data['data']['items'])):
 				self.iv_barcodes.append(next(iv_gen))
