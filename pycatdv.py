@@ -5,6 +5,7 @@ from settings import url
 
 API_VERS = '4'
 
+
 class Catdvlib(object):
     """
     A python wrapper for the CatDV Server REST API service
@@ -15,8 +16,9 @@ class Catdvlib(object):
         #self.url = 'http://192.168.0.101:8080/api/4' # For Local Testing
         self.url = url
         self.iv_barcodes = []
+        self.key = None
 
-    #Generic methods
+    # Generic methods
     def set_url(self):
         """
         Stores the location of the CatDV server.
@@ -40,8 +42,6 @@ class Catdvlib(object):
         pwd = getpass.getpass('Enter password: ')
         self.set_auth(usr, pwd)
         return
-        #self.auth = self.url + "/session?usr=" + usr + "&pwd=" + pwd
-        #return self.
 
     def get_rsa(self):
         full_key = self.url + '/session/key'
@@ -76,8 +76,8 @@ class Catdvlib(object):
 
     def get_catalog_name(self):
         """Call to get information on all available catalogs."""
-        catalogs = requests.get(self.url + "/catalogs;jsessionid="
-            + str(self.key))
+        catalogs = requests.get(self.url + "/api/" + API_VERS +
+                                "/catalogs;jsessionid=" + str(self.key))
         catalog_data = json.loads(catalogs.text)
         self.catalog_names = []
         for i in catalog_data['data']:
@@ -90,9 +90,9 @@ class Catdvlib(object):
         Requests all clips from a client catalog. Filtered by catalog ID.
         """
         content_raw = requests.get(
-            self.url + '/clips;jsessionid=' + self.key + \
-            '?filter=and((catalog.id)eq({}))&include=userFields'\
-            .format(catalog_id))
+            self.url + "/api/" + API_VERS + '/clips;jsessionid=' + self.key
+            + '?filter=and((catalog.id)eq({}))&include=userFields'.format(
+                catalog_id))
         self.content_data = json.loads(content_raw.text)
         return self.content_data
 
