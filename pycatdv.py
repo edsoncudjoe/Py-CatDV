@@ -12,11 +12,37 @@ class Catdvlib(object):
 
     """
 
-    def __init__(self):
-        #self.url = 'http://192.168.0.101:8080/api/4' # For Local Testing
+    def __init__(self, server_url, api_vers):
+
+        self.server = server_url
+        self.api = str(api_vers)
         self.url = url
         self.iv_barcodes = []
         self.key = None
+        self.username = None
+        self.password = None
+
+    def url_route(fnc):
+        """build full login url to get session key"""
+        def build_api_url(self, svr_address, api, username, password):
+            if svr_address.startswith('http://'):
+                self.url = svr_address + '/api/' + str(api) + '/' + \
+                       'session?usr=' + username + '&pwd=' + password
+                return self.url
+            else:
+                self.url = 'http://' + svr_address + '/api/' + str(api) + '/' \
+                           + 'session?usr=' + username + '&pwd=' + password
+                return self.url
+        return build_api_url
+
+    @url_route
+    def login_url(self, svr_address, api,  username, password):
+        return url
+
+    def login(self):
+        self.username = raw_input('Enter username: ')
+        self.password = getpass.getpass('Enter password: ')
+        pass
 
     # Generic methods
     def set_url(self):
@@ -31,8 +57,7 @@ class Catdvlib(object):
 
     def set_auth(self, username, password):
         """Api request with given login info"""
-        self.auth = self.url + '/api/' + API_VERS + '/session?usr=' + \
-                    username + '&pwd=' + password
+        self.auth = self.login_url(self.server, self.api, username, password)
         return self.auth
 
     def get_auth(self):
@@ -56,6 +81,7 @@ class Catdvlib(object):
         """
         Extracts the session key from login to be used for future API calls.
         """
+
         connect_timeout = 60.0
         try:
             response = requests.get(self.auth,
@@ -76,7 +102,7 @@ class Catdvlib(object):
 
     def get_catalog_name(self):
         """Call to get information on all available catalogs."""
-        catalogs = requests.get(self.url + "/api/" + API_VERS +
+        catalogs = requests.get('http://' + self.server + "/api/" + API_VERS +
                                 "/catalogs;jsessionid=" + str(self.key))
         catalog_data = json.loads(catalogs.text)
         self.catalog_names = []
@@ -90,7 +116,7 @@ class Catdvlib(object):
         Requests all clips from a client catalog. Filtered by catalog ID.
         """
         content_raw = requests.get(
-            self.url + "/api/" + API_VERS + '/clips;jsessionid=' + self.key
+            'http://' + self.server + "/api/" + API_VERS + '/clips;jsessionid=' + self.key
             + '?filter=and((catalog.id)eq({}))&include=userFields'.format(
                 catalog_id))
         self.content_data = json.loads(content_raw.text)
@@ -100,11 +126,20 @@ class Catdvlib(object):
         """Returns all clips that match the given search term"""
         entry = raw_input('Enter clip title: ')
         result = requests.get(
-            self.url + '/api/' + API_VERS + '/clips;jsessionid=' + self.key + \
-            '?filter=and((clip.name)has({}))&include=userFields'\
-            .format(entry))
+            'http://' + self.server + '/api/' + self.api + \
+            '/clips;jsessionid=' + self.key + \
+            '?filter=and((clip.name)has({}))&include=userFields'.format(entry))
         jdata = json.loads(result.text)
         return jdata['data']['items']
+
+    def clip_gui_search(self, entry):
+        """Returns all clips that match the given search term"""
+        result = requests.get(
+            'http://' + self.server + '/api/' + self.api + \
+            '/clips;jsessionid=' + self.key + \
+            '?filter=and((clip.name)has({}))&include=userFields'.format(entry))
+        jdata = json.loads(result.text)
+        return jdata
 
     def clip_id_search(self):
         """
@@ -113,7 +148,7 @@ class Catdvlib(object):
         """
         clip_id = raw_input('Enter Clip ID \'eg: 480CADB5\': ')
         clip = requests.get(
-            self.url + '/api/' + API_VERS + '/clips;jsessionid=' + self.key + \
+            'http://' + self.server + '/api/' + API_VERS + '/clips;jsessionid=' + self.key + \
             '?filter=and((clip.clipref)has({}))'.format(clip_id))
         clip_info = json.loads(clip.text)
         return clip_info['data']['items']
@@ -127,7 +162,7 @@ class Catdvlib(object):
         """Returns all clips that match the given search term"""
         entry = raw_input('Enter clip title: ')
         result = requests.get(
-            self.url + '/api/' + API_VERS + '/clips;jsessionid=' + self.key
+            'http://' + self.server + '/api/' + API_VERS + '/clips;jsessionid=' + self.key
             + '?filter=and((clip.name)'
                 'has({}))&include=userFields'.format(entry))
         jdata = json.loads(result.text)
@@ -165,11 +200,12 @@ class Catdvlib(object):
         return sorted(set(self.iv_barcodes))
 
 if __name__ == '__main__':
-    user = Catdvlib()
+
+    user = Catdvlib(server_url='http://192.168.0.101:8080', api_vers=4)
     try:
         user.get_auth()
         user.get_session_key()
-        long_key = user.get_rsa()
+        user.clip_search()
     except Exception, e:
         print(e)
     finally:
